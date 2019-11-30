@@ -77,7 +77,7 @@ def cost_function(prediction, family_size_ls, choice_dict, choice_dict_num, pena
 
     return (penalty, )
 
-def main(args):
+def main(args, pool):
   print(args)
   print("")
 
@@ -118,7 +118,7 @@ def main(args):
   # AG
   # --------------------------------------------------
   toolbox = base.Toolbox()
-  pool    = multiprocessing.Pool()
+
   # Geral
   toolbox.register("map", pool.map)
 
@@ -208,6 +208,8 @@ def save_submission(submission, best_solution):
   print(submission.head())
   submission.to_csv('submission.csv')  
 
+pool    = multiprocessing.Pool()
+
 # Params
 #
 if __name__ == "__main__":
@@ -229,4 +231,4 @@ if __name__ == "__main__":
     parser.add_argument('--cxpb', type=float, default=0.7, metavar='N',
                         help='')                        
 
-    main(parser.parse_args())    
+    main(parser.parse_args(), pool)    
