@@ -1,7 +1,5 @@
 
-import csv
 import random
-
 import numpy
 import pandas as pd
 from deap import algorithms
@@ -9,14 +7,12 @@ from deap import base
 from deap import creator
 from deap import tools
 import multiprocessing
-from scoop import futures
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-import json
 import argparse
 
-N_DAYS = 100
+N_DAYS        = 100
 MAX_OCCUPANCY = 300
 MIN_OCCUPANCY = 125
 FAMINY_SIZE   = 5000
@@ -31,7 +27,6 @@ set_creator(creator)
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMin)
 
-
 def cost_function(prediction, family_size_ls, choice_dict, choice_dict_num, penalties_dict):
     penalty = 0
     #print(prediction, days, family_size_ls, choice_dict_num, choice_dict)
@@ -44,13 +39,6 @@ def cost_function(prediction, family_size_ls, choice_dict, choice_dict_num, pena
     for n, c, c_dict, choice in zip(family_size_ls, prediction, list(choice_dict.values()), choice_dict_num):
         
         d = int(c)
-        # Day
-        #if c == 10:
-        #    d = random.randint(1, 100)
-        #else:
-        #    d = c_dict['choice_{}'.format(c)]
-        
-        # add the family member count to the daily occupancy
         daily_occupancy[d] += n
 
         # Calculate the penalty for not getting top preference
@@ -90,13 +78,12 @@ def cost_function(prediction, family_size_ls, choice_dict, choice_dict_num, pena
     return (penalty, )
 
 def main(args):
-  print("")
   print(args)
   print("")
 
   #load dataset
-  data       = pd.read_csv('family_data.csv', index_col='family_id')
-  submission = pd.read_csv('sample_submission.csv', index_col='family_id')
+  data       = pd.read_csv('data/family_data.csv', index_col='family_id')
+  submission = pd.read_csv('data/sample_submission.csv', index_col='family_id')
 
   print(data.head())
   print(data.shape)
@@ -107,7 +94,6 @@ def main(args):
   choice_dict       = data[cols].T.to_dict()
 
   # from 100 to 1
-
   family_size_ls  = list(family_size_dict.values())
   choice_dict_num = [{vv:i for i, vv in enumerate(di.values())} for di in choice_dict.values()]
 
@@ -170,10 +156,13 @@ def main(args):
 
   # Best Solution
   best_solution = tools.selBest(pop, 1)[0]
+  print("")
+  print("[{}] best_score: {}".format(logbook[-1]['gen'], logbook[-1]['min'][0]))
 
-  #print("best_solution: ", best_solution)
+  with open('results/bestscore.txt', 'w') as f:
+    f.write(str(logbook[-1]['min'][0]))
 
-  with open('logbook.txt', 'w') as f:
+  with open('results/logbook.txt', 'w') as f:
     f.write(str(logbook))
 
   daily_occupancy = get_daily_occupancy(best_solution, family_size_ls, choice_dict_num) 
@@ -187,7 +176,7 @@ def save_viz(logbook, daily_occupancy):
   front = np.array([(c['gen'], c['avg'][0]) for c in logbook])
   plt.plot(front[:,0][1:-1], np.log(front[:,1][1:-1]), "-bo", c="b")
   plt.axis("tight")
-  plt.savefig('history.png')  
+  plt.savefig('results/history.png')  
 
   # PLot Ocuppancy
   plt.figure(figsize=(10,8))
@@ -195,7 +184,7 @@ def save_viz(logbook, daily_occupancy):
   plt.plot(list(daily_occupancy.values()), 'bo')
   plt.plot(list(daily_occupancy.values()))
   plt.hlines(MIN_OCCUPANCY, 0, 100, color='r')
-  plt.savefig('daily_occupancy.png')
+  plt.savefig('results/daily_occupancy.png')
 
 def get_daily_occupancy(solution, family_size_ls, choice_dict_num):
   # We'll use this to count the number of people scheduled each day
@@ -210,6 +199,7 @@ def get_daily_occupancy(solution, family_size_ls, choice_dict_num):
   return daily_occupancy
 
 def save_submission(submission, best_solution):
+  print("save_submission")
   days = []
   for c in best_solution:
     days.append(c)
@@ -236,9 +226,7 @@ if __name__ == "__main__":
     parser.add_argument('--mutpb', type=float, default=0.3, metavar='N',
                         help='Mutation per individuo')
 
-
     parser.add_argument('--cxpb', type=float, default=0.7, metavar='N',
                         help='')                        
-
 
     main(parser.parse_args())    
